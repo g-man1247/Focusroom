@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head('Admin Console')}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('admin')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Administrator Console</h1>
+                    <p class="page-subtitle">Platform-wide governance, user management, and room moderation.</p>
+                </div>
+            </div>
+
+            <!-- Flash alerts -->
+            <div th:if="${successMessage}" class="alert alert-success">
+                <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger">
+                <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- Platform KPI Metric Cards -->
+            <div class="grid-4">
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Total Users</span>
+                        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                            <i data-lucide="users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${totalUsers}">0</div>
+                    <div class="stat-desc" th:text="${activeUsers} + ' active accounts'">0 active</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Active Rooms</span>
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                            <i data-lucide="door-open"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${activeRooms}">0</div>
+                    <div class="stat-desc" th:text="${totalRooms} + ' rooms total'">0 total</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Live Sessions</span>
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                            <i data-lucide="zap"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${activeSessions}">0</div>
+                    <div class="stat-desc">Ongoing study timers</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">System Health</span>
+                        <div class="stat-icon" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8;">
+                            <i data-lucide="server"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" style="color: var(--success); font-size: 1.5rem;">OPTIMAL</div>
+                    <div class="stat-desc">MySQL & Spring Boot 3.3.5</div>
+                </div>
+            </div>
+
+            <!-- User Management Table -->
+            <div class="card" style="margin-bottom: 28px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="font-size: 1.15rem; font-weight: 700;">Registered Students & Users</h2>
+                        <p style="color: var(--text-muted); font-size: 0.825rem;">Manage accounts and review registration timestamps.</p>
+                    </div>
+                    <form th:action="@{/admin}" method="get" style="display: flex; gap: 8px;">
+                        <input type="text" name="search" th:value="${searchQuery}" class="form-control" placeholder="Search user..." style="padding: 6px 12px; font-size: 0.85rem; width: 200px;">
+                        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+                    </form>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <th style="padding: 12px 16px;">User</th>
+                                <th style="padding: 12px 16px;">Email</th>
+                                <th style="padding: 12px 16px;">Role</th>
+                                <th style="padding: 12px 16px;">Account Status</th>
+                                <th style="padding: 12px 16px;">Joined Date</th>
+                                <th style="padding: 12px 16px; text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="u : ${users.content}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                                <td style="padding: 12px 16px;">
+                                    <div style="font-weight: 600;" th:text="${u.fullName ?: u.username}">Name</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-dim);" th:text="'@' + ${u.username}">@user</div>
+                                </td>
+                                <td style="padding: 12px 16px;" th:text="${u.email}">email</td>
+                                <td style="padding: 12px 16px;">
+                                    <span class="badge" th:classappend="${u.role == T(com.focusroom.entity.enums.Role).ROLE_ADMIN ? 'badge-admin' : 'badge-public'}" th:text="${u.role}">ROLE_USER</span>
+                                </td>
+                                <td style="padding: 12px 16px;">
+                                    <span class="badge" th:classappend="${u.accountStatus == T(com.focusroom.entity.enums.AccountStatus).ACTIVE ? 'badge-public' : 'badge-private'}" th:text="${u.accountStatus}">ACTIVE</span>
+                                </td>
+                                <td style="padding: 12px 16px; color: var(--text-muted);" th:text="${#temporals.format(u.createdAt, 'MMM dd, yyyy')}">Date</td>
+                                <td style="padding: 12px 16px; text-align: right;">
+                                    <form th:if="${u.role != T(com.focusroom.entity.enums.Role).ROLE_ADMIN}" th:action="@{/admin/users/{id}/toggle-status(id=${u.id})}" method="post" style="display: inline-block;">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                        <button type="submit" class="btn btn-sm" th:classappend="${u.accountStatus == T(com.focusroom.entity.enums.AccountStatus).ACTIVE ? 'btn-danger' : 'btn-secondary'}">
+                                            <span th:text="${u.accountStatus == T(com.focusroom.entity.enums.AccountStatus).ACTIVE ? 'Suspend' : 'Activate'}">Toggle</span>
+                                        </button>
+                                    </form>
+                                    <span th:if="${u.role == T(com.focusroom.entity.enums.Role).ROLE_ADMIN}" style="font-size: 0.75rem; color: var(--text-dim);">Protected</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Study Rooms Moderation Table -->
+            <div class="card">
+                <div style="margin-bottom: 20px;">
+                    <h2 style="font-size: 1.15rem; font-weight: 700;">Study Rooms Moderation</h2>
+                    <p style="color: var(--text-muted); font-size: 0.825rem;">Monitor live rooms, participant caps, and archive or remove inappropriate spaces.</p>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <th style="padding: 12px 16px;">Room Name</th>
+                                <th style="padding: 12px 16px;">Subject</th>
+                                <th style="padding: 12px 16px;">Owner</th>
+                                <th style="padding: 12px 16px;">Visibility</th>
+                                <th style="padding: 12px 16px;">Status</th>
+                                <th style="padding: 12px 16px; text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="r : ${rooms.content}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                                <td style="padding: 12px 16px; font-weight: 600;" th:text="${r.name}">Name</td>
+                                <td style="padding: 12px 16px;" th:text="${r.subject}">Subject</td>
+                                <td style="padding: 12px 16px; color: var(--text-muted);" th:text="${r.owner.username}">Owner</td>
+                                <td style="padding: 12px 16px;">
+                                    <span class="badge" th:classappend="${r.isPrivate() ? 'badge-private' : 'badge-public'}" th:text="${r.visibility}">PUBLIC</span>
+                                </td>
+                                <td style="padding: 12px 16px;">
+                                    <span class="badge" th:classappend="${r.status == T(com.focusroom.entity.enums.RoomStatus).ACTIVE ? 'badge-public' : 'badge-private'}" th:text="${r.status}">ACTIVE</span>
+                                </td>
+                                <td style="padding: 12px 16px; text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                                    <form th:if="${r.status == T(com.focusroom.entity.enums.RoomStatus).ACTIVE}" th:action="@{/admin/rooms/{id}/archive(id=${r.id})}" method="post">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                        <button type="submit" class="btn btn-secondary btn-sm" title="Archive">Archive</button>
+                                    </form>
+                                    <form th:action="@{/admin/rooms/{id}/delete(id=${r.id})}" method="post" onsubmit="return confirm('Permanently delete this room?');">
+                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Delete">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

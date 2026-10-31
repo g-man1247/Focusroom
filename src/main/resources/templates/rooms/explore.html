@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head('Explore Study Rooms')}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('rooms')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Explore Virtual Study Rooms</h1>
+                    <p class="page-subtitle">Find or join digital study rooms organized by subject or topic.</p>
+                </div>
+                <a th:href="@{/rooms/create}" class="btn btn-primary">
+                    <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                    <span>Create Study Room</span>
+                </a>
+            </div>
+
+            <!-- Flash alerts -->
+            <div th:if="${successMessage}" class="alert alert-success">
+                <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger">
+                <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+            <div th:if="${infoMessage}" class="alert alert-info">
+                <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+                <span th:text="${infoMessage}"></span>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="card" style="margin-bottom: 24px; padding: 16px 20px;">
+                <form th:action="@{/rooms}" method="get" style="display: flex; gap: 12px; align-items: center;">
+                    <div style="flex: 1; position: relative;">
+                        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); width: 18px; height: 18px;"></i>
+                        <input type="text" name="search" th:value="${searchQuery}" class="form-control" style="padding-left: 40px;" placeholder="Filter by room title, subject, or keyword...">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Search</button>
+                    <a th:if="${searchQuery != null and !searchQuery.isBlank()}" th:href="@{/rooms}" class="btn btn-secondary">Clear</a>
+                </form>
+            </div>
+
+            <!-- Rooms Grid -->
+            <div th:if="${#lists.isEmpty(rooms)}" class="card" style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+                <i data-lucide="search-x" style="width: 48px; height: 48px; color: var(--text-dim); margin-bottom: 12px;"></i>
+                <h3 style="font-size: 1.15rem; font-weight: 600; color: #fff; margin-bottom: 6px;">No study rooms found</h3>
+                <p style="font-size: 0.9rem; margin-bottom: 16px;">Try adjusting your search criteria or create your own room.</p>
+                <a th:href="@{/rooms/create}" class="btn btn-primary btn-sm">Create New Room</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(rooms)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                <div th:each="room : ${rooms}" class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <span class="badge" th:classappend="${room.isPrivate() ? 'badge-private' : 'badge-public'}" th:text="${room.visibility}">PUBLIC</span>
+                            <span style="font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+                                <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+                                <span th:text="${room.activeParticipantCount} + ' / ' + ${room.maxParticipants} + ' students'">0 / 25 students</span>
+                            </span>
+                        </div>
+
+                        <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;" th:text="${room.name}">Room Name</h2>
+                        <div style="font-size: 0.825rem; color: var(--primary); font-weight: 600; margin-bottom: 10px;" th:text="${room.subject}">Mathematics</div>
+                        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;" th:text="${room.description ?: 'Collaborative virtual study space for students.'}">Description</p>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 16px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 0.775rem; color: var(--text-dim);" th:text="'Host: ' + ${room.owner.username}">Host: User</span>
+                        <a th:href="@{/rooms/{id}(id=${room.id})}" class="btn btn-primary btn-sm">
+                            <span>Join Room</span>
+                            <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

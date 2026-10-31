@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head('Create Study Room')}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('rooms')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Create a Study Room</h1>
+                    <p class="page-subtitle">Configure your virtual study space for group productivity.</p>
+                </div>
+                <a th:href="@{/rooms}" class="btn btn-secondary">
+                    <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+                    <span>Back to Rooms</span>
+                </a>
+            </div>
+
+            <!-- Error message -->
+            <div th:if="${errorMessage}" class="alert alert-danger">
+                <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <div class="card" style="max-width: 680px;">
+                <form th:action="@{/rooms/create}" th:object="${createRoomDto}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                    <div class="form-group">
+                        <label class="form-label" for="name">Room Name</label>
+                        <input type="text" id="name" th:field="*{name}" class="form-control" placeholder="e.g. DBMS Final Exam Prep & Review" required>
+                        <div class="form-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="subject">Academic Subject / Category</label>
+                        <input type="text" id="subject" th:field="*{subject}" class="form-control" placeholder="e.g. Database Management Systems, Data Structures, Physics" required>
+                        <div class="form-error" th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">Room Description & Goals</label>
+                        <textarea id="description" th:field="*{description}" class="form-control" rows="3" placeholder="What are the study rules or goals for this session?"></textarea>
+                        <div class="form-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                    </div>
+
+                    <div class="grid-2" style="margin-bottom: 0;">
+                        <div class="form-group">
+                            <label class="form-label" for="visibility">Visibility</label>
+                            <select id="visibility" th:field="*{visibility}" class="form-control" onchange="toggleAccessCode(this.value)">
+                                <option value="PUBLIC">Public (Any student can discover & join)</option>
+                                <option value="PRIVATE">Private (Requires access code to enter)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="maxParticipants">Participant Limit</label>
+                            <input type="number" id="maxParticipants" th:field="*{maxParticipants}" class="form-control" min="2" max="100" value="25">
+                            <div class="form-error" th:if="${#fields.hasErrors('maxParticipants')}" th:errors="*{maxParticipants}"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="accessCodeGroup" style="display: none;">
+                        <label class="form-label" for="accessCode">Private Room Access Code</label>
+                        <input type="text" id="accessCode" th:field="*{accessCode}" class="form-control" placeholder="Create a secret code or passphrase">
+                        <div class="form-error" th:if="${#fields.hasErrors('accessCode')}" th:errors="*{accessCode}"></div>
+                    </div>
+
+                    <div style="margin-top: 28px; display: flex; gap: 12px; justify-content: flex-end;">
+                        <a th:href="@{/rooms}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                            <span>Create Room</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    lucide.createIcons();
+
+    function toggleAccessCode(val) {
+        const group = document.getElementById('accessCodeGroup');
+        if (val === 'PRIVATE') {
+            group.style.display = 'block';
+        } else {
+            group.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const vis = document.getElementById('visibility');
+        if (vis) toggleAccessCode(vis.value);
+    });
+</script>
+</body>
+</html>

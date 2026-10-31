@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied | Focusroom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/focusroom.css}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 24px;">
+    <div class="card" style="max-width: 460px; padding: 48px 32px;">
+        <div style="font-size: 5rem; font-weight: 800; color: #ef4444; line-height: 1; margin-bottom: 16px;">
+            403
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">Access Restricted</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;" th:text="${errorMessage ?: 'You do not have the required permissions to view this resource.'}">
+            Access is forbidden.
+        </p>
+        <a th:href="@{/dashboard}" class="btn btn-primary">Return to Dashboard</a>
+    </div>
+</body>
+</html>

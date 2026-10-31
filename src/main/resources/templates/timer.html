@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head('Pomodoro Focus Timer')}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('timer')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Pomodoro Focus Timer</h1>
+                    <p class="page-subtitle">Track focused study intervals backed by persistent session timestamps.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;">
+                <!-- Main Timer Card -->
+                <div class="card" style="text-align: center; padding: 48px 32px;">
+                    <!-- Mode Selector Pills -->
+                    <div style="display: inline-flex; background: var(--bg-input); padding: 4px; border-radius: var(--radius-full); margin-bottom: 32px; border: 1px solid var(--border-color);">
+                        <button class="btn btn-secondary btn-sm timer-mode-btn active btn-primary" data-type="FOCUS" data-minutes="25" style="border-radius: var(--radius-full);">25m Focus</button>
+                        <button class="btn btn-secondary btn-sm timer-mode-btn" data-type="SHORT_BREAK" data-minutes="5" style="border-radius: var(--radius-full);">5m Short Break</button>
+                        <button class="btn btn-secondary btn-sm timer-mode-btn" data-type="LONG_BREAK" data-minutes="15" style="border-radius: var(--radius-full);">15m Long Break</button>
+                    </div>
+
+                    <!-- SVG Circular Progress & Time Display -->
+                    <div class="timer-container" style="padding: 10px 0;">
+                        <div class="timer-circle-wrap" style="width: 280px; height: 280px;">
+                            <svg class="timer-svg" viewBox="0 0 260 260">
+                                <defs>
+                                    <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#6366f1"/>
+                                        <stop offset="50%" stop-color="#8b5cf6"/>
+                                        <stop offset="100%" stop-color="#d946ef"/>
+                                    </linearGradient>
+                                </defs>
+                                <circle class="timer-bg-path" cx="130" cy="130" r="120"/>
+                                <circle id="timerProgressCircle" class="timer-progress-path" cx="130" cy="130" r="120"/>
+                            </svg>
+                            <div class="timer-content">
+                                <div id="timerTimeDisplay" class="timer-time-display">25:00</div>
+                                <div id="timerStatusText" class="timer-status-text">Ready</div>
+                            </div>
+                        </div>
+
+                        <!-- Timer Action Buttons -->
+                        <div class="timer-actions">
+                            <button id="btnTimerStart" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem;">
+                                <i data-lucide="play" style="width: 18px; height: 18px;"></i>
+                                <span>Start Studying</span>
+                            </button>
+                            <button id="btnTimerPause" class="btn btn-secondary" style="display: none; padding: 12px 28px; font-size: 1rem;">
+                                <i data-lucide="pause" style="width: 18px; height: 18px;"></i>
+                                <span>Pause</span>
+                            </button>
+                            <button id="btnTimerResume" class="btn btn-primary" style="display: none; padding: 12px 28px; font-size: 1rem;">
+                                <i data-lucide="play" style="width: 18px; height: 18px;"></i>
+                                <span>Resume</span>
+                            </button>
+                            <button id="btnTimerComplete" class="btn btn-secondary" style="display: none; padding: 12px 24px;">
+                                <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+                                <span>Complete</span>
+                            </button>
+                            <button id="btnTimerCancel" class="btn btn-danger" style="display: none; padding: 12px 24px;">
+                                <i data-lucide="square" style="width: 18px; height: 18px;"></i>
+                                <span>Reset</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Subject Input and Options -->
+                    <div style="max-width: 380px; margin: 32px auto 0; text-align: left;">
+                        <label class="form-label" for="timerSubject">Session Subject or Goal</label>
+                        <input type="text" id="timerSubject" class="form-control" placeholder="e.g. Algorithms, Chemistry, Literature" value="General Study">
+                    </div>
+
+                    <!-- Hidden Inputs for Timer Script -->
+                    <input type="hidden" id="timerPlannedMinutes" value="25">
+                    <input type="hidden" id="timerSessionType" value="FOCUS">
+                    <input type="hidden" id="timerRoomId" value="">
+                </div>
+
+                <!-- Right Side: Focus Advice & History -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Productivity Tip Card -->
+                    <div class="card">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="zap" style="width: 18px; height: 18px; color: var(--warning);"></i>
+                            <span>The Pomodoro Technique</span>
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px;">
+                            Study with complete focus for 25 minutes, followed by a short 5-minute break. After 4 completed sessions, take a longer 15-minute break.
+                        </p>
+                        <ul style="font-size: 0.8rem; color: var(--text-dim); padding-left: 18px; line-height: 1.6;">
+                            <li>Eliminate phone and browser notifications.</li>
+                            <li>Paused time does not count toward study hours.</li>
+                            <li>All sessions are automatically saved in MySQL.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Recent Study Sessions Mini Table -->
+                    <div class="card">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <h3 style="font-size: 0.95rem; font-weight: 700;">Recent Sessions</h3>
+                            <a th:href="@{/analytics}" style="font-size: 0.775rem; color: var(--primary);">View Analytics</a>
+                        </div>
+
+                        <div th:if="${#lists.isEmpty(recentSessions)}" style="text-align: center; padding: 24px; color: var(--text-dim); font-size: 0.85rem;">
+                            No logged sessions yet.
+                        </div>
+
+                        <div th:unless="${#lists.isEmpty(recentSessions)}" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div th:each="s : ${recentSessions}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--bg-input); border-radius: var(--radius-sm); font-size: 0.825rem;">
+                                <div>
+                                    <div style="font-weight: 600;" th:text="${s.subject ?: 'General'}">Subject</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-dim);" th:text="${#temporals.format(s.startTime, 'MMM dd, HH:mm')}">Date</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 700; color: #fff;" th:text="${s.actualDurationSeconds / 60} + 'm'">25m</div>
+                                    <div style="font-size: 0.7rem; color: var(--success);" th:text="${s.status}">COMPLETED</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/timer.js}"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

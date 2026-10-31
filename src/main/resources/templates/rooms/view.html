@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head(${room.name})}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('rooms')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <!-- Room Top Header Bar -->
+            <div class="page-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <h1 class="page-title" style="font-size: 1.5rem;" th:text="${room.name}">Study Room</h1>
+                        <span class="badge" th:classappend="${room.isPrivate() ? 'badge-private' : 'badge-public'}" th:text="${room.visibility}">PUBLIC</span>
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);" th:text="${room.subject}">Subject</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;" th:text="${room.description ?: 'Distraction-free environment'}">Description</p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Owner Controls -->
+                    <div th:if="${isOwner}" style="display: flex; gap: 8px;">
+                        <form th:action="@{/rooms/{id}/archive(id=${room.id})}" method="post" onsubmit="return confirm('Archive this study room?')">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            <button type="submit" class="btn btn-secondary btn-sm" title="Archive Room">
+                                <i data-lucide="archive" style="width: 14px; height: 14px;"></i>
+                                <span>Archive</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Leave Room -->
+                    <form th:action="@{/rooms/{id}/leave(id=${room.id})}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+                            <span>Leave Room</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Two-Column Room Workspace -->
+            <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px;">
+                <!-- Left: Synced Focus Timer & Active Room Sessions -->
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <!-- Room Synced Timer Card -->
+                    <div class="card" style="text-align: center; padding: 32px 24px;">
+                        <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">
+                            Room Focus Timer
+                        </h2>
+
+                        <!-- Mode Selection Pills -->
+                        <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px;">
+                            <button class="btn btn-secondary btn-sm timer-mode-btn active btn-primary" data-type="FOCUS" data-minutes="25">25m Focus</button>
+                            <button class="btn btn-secondary btn-sm timer-mode-btn" data-type="SHORT_BREAK" data-minutes="5">5m Short Break</button>
+                            <button class="btn btn-secondary btn-sm timer-mode-btn" data-type="LONG_BREAK" data-minutes="15">15m Long Break</button>
+                        </div>
+
+                        <!-- SVG Circular Progress & Time Display -->
+                        <div class="timer-container" style="padding: 10px 0;">
+                            <div class="timer-circle-wrap" style="width: 240px; height: 240px;">
+                                <svg class="timer-svg" viewBox="0 0 260 260">
+                                    <defs>
+                                        <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#6366f1"/>
+                                            <stop offset="50%" stop-color="#8b5cf6"/>
+                                            <stop offset="100%" stop-color="#d946ef"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <circle class="timer-bg-path" cx="130" cy="130" r="120"/>
+                                    <circle id="timerProgressCircle" class="timer-progress-path" cx="130" cy="130" r="120"/>
+                                </svg>
+                                <div class="timer-content">
+                                    <div id="timerTimeDisplay" class="timer-time-display" style="font-size: 3rem;">25:00</div>
+                                    <div id="timerStatusText" class="timer-status-text">Ready</div>
+                                </div>
+                            </div>
+
+                            <div class="timer-actions" style="margin-top: 28px;">
+                                <button id="btnTimerStart" class="btn btn-primary">
+                                    <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                                    <span>Start Focus</span>
+                                </button>
+                                <button id="btnTimerPause" class="btn btn-secondary" style="display: none;">
+                                    <i data-lucide="pause" style="width: 16px; height: 16px;"></i>
+                                    <span>Pause</span>
+                                </button>
+                                <button id="btnTimerResume" class="btn btn-primary" style="display: none;">
+                                    <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                                    <span>Resume</span>
+                                </button>
+                                <button id="btnTimerComplete" class="btn btn-secondary" style="display: none;">
+                                    <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                                    <span>Complete</span>
+                                </button>
+                                <button id="btnTimerCancel" class="btn btn-danger" style="display: none;">
+                                    <i data-lucide="square" style="width: 16px; height: 16px;"></i>
+                                    <span>Reset</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Form Elements for Timer Script -->
+                        <input type="hidden" id="timerPlannedMinutes" value="25">
+                        <input type="hidden" id="timerSessionType" value="FOCUS">
+                        <input type="hidden" id="timerSubject" th:value="${room.subject}">
+                        <input type="hidden" id="timerRoomId" th:value="${room.id}">
+                    </div>
+
+                    <!-- Room Goals / Instructions Card -->
+                    <div class="card" style="padding: 20px 24px;">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i data-lucide="sparkles" style="width: 18px; height: 18px; color: var(--primary);"></i>
+                            <span>Study Room Guidelines</span>
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;">
+                            This room is dedicated to focused study sessions. Use the Pomodoro timer to synchronize your focus blocks with peers. Keep chat messages academic, encouraging, and respectful.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Active Participants & Real-time Chat -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Active Participants Card -->
+                    <div class="card" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <h3 style="font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim);">
+                                Participants (<span th:text="${#lists.size(activeMembers)}">0</span>/<span th:text="${room.maxParticipants}">25</span>)
+                            </h3>
+                            <span class="badge badge-public" style="font-size: 0.65rem;">LIVE</span>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 10px; max-height: 180px; overflow-y: auto;">
+                            <div th:each="m : ${activeMembers}" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="user-avatar-badge" style="width: 30px; height: 30px; font-size: 0.75rem;" th:text="${#strings.substring(m.user.fullName ?: m.user.username, 0, 1)}">U</div>
+                                    <div>
+                                        <div style="font-size: 0.85rem; font-weight: 600;" th:text="${m.user.fullName ?: m.user.username}">Student</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-dim);" th:text="'@' + ${m.user.username}">@user</div>
+                                    </div>
+                                </div>
+                                <span th:if="${m.role == T(com.focusroom.entity.enums.MembershipRole).OWNER}" class="badge badge-admin" style="font-size: 0.65rem;">HOST</span>
+                                <span th:unless="${m.role == T(com.focusroom.entity.enums.MembershipRole).OWNER}" style="font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 4px;">
+                                    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--success);"></span>
+                                    <span>Studying</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Room Live Chat Window -->
+                    <div class="chat-window">
+                        <div class="chat-header">
+                            <span style="font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="message-square" style="width: 16px; height: 16px; color: var(--primary);"></i>
+                                <span>Room Chat</span>
+                            </span>
+                            <span style="font-size: 0.75rem; color: var(--text-dim);">Live</span>
+                        </div>
+
+                        <div class="chat-messages" id="chatMessages">
+                            <div th:if="${#lists.isEmpty(messages)}" style="text-align: center; padding: 40px 10px; color: var(--text-dim); font-size: 0.85rem;">
+                                No messages yet. Say hello to your study partners!
+                            </div>
+                            <div th:each="msg : ${messages}" 
+                                 th:class="${msg.messageType == T(com.focusroom.entity.enums.MessageType).JOIN or msg.messageType == T(com.focusroom.entity.enums.MessageType).LEAVE or msg.messageType == T(com.focusroom.entity.enums.MessageType).SYSTEM} ? 'chat-msg system' : (msg.senderUsername == #authentication.name ? 'chat-msg mine' : 'chat-msg other')">
+                                
+                                <span th:if="${msg.messageType == T(com.focusroom.entity.enums.MessageType).CHAT and msg.senderUsername != #authentication.name}" class="chat-sender-name" th:text="${msg.senderFullName ?: msg.senderUsername}">Sender</span>
+                                <div th:if="${msg.messageType == T(com.focusroom.entity.enums.MessageType).CHAT}" class="chat-bubble" th:text="${msg.message}">Message</div>
+                                <span th:if="${msg.messageType != T(com.focusroom.entity.enums.MessageType).CHAT}" th:text="${(msg.senderFullName ?: msg.senderUsername) + ' ' + msg.message}">System alert</span>
+                            </div>
+                        </div>
+
+                        <form id="chatForm" class="chat-input-bar">
+                            <input type="text" id="chatInput" class="form-control" placeholder="Send a message to room..." style="padding: 8px 12px; font-size: 0.85rem;" autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/timer.js}"></script>
+<script th:src="@{/js/room-chat.js}"></script>
+<script th:inline="javascript">
+    lucide.createIcons();
+    const roomId = /*[[${room.id}]]*/ 1;
+    const currentUsername = /*[[${#authentication.name}]]*/ 'user';
+    document.addEventListener('DOMContentLoaded', () => {
+        initRoomChat(roomId, currentUsername);
+    });
+</script>
+</body>
+</html>

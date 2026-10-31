@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html-head('Dashboard')}"></head>
+<body>
+<div class="app-container">
+    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+    <main class="app-main">
+        <header th:replace="~{fragments/layout :: navbar}"></header>
+
+        <div class="page-content">
+            <!-- Header -->
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title" th:text="${stats.welcomeMessage}">Welcome Back!</h1>
+                    <p class="page-subtitle">Here is an overview of your studying progress and active virtual rooms.</p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <a th:href="@{/timer}" class="btn btn-primary">
+                        <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+                        <span>Start Study Session</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Flash alerts -->
+            <div th:if="${successMessage}" class="alert alert-success">
+                <i data-lucide="check-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger">
+                <i data-lucide="alert-circle" style="width: 18px; height: 18px;"></i>
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- 4 Stat Cards -->
+            <div class="grid-4">
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Total Study Time</span>
+                        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                            <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${stats.totalStudyHours} + 'h'">0.0h</div>
+                    <div class="stat-desc">Lifetime recorded study hours</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Today's Focus</span>
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                            <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${stats.todayStudyMinutes} + 'm'">0m</div>
+                    <div class="stat-desc">Logged study today</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Study Streak</span>
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">
+                            <i data-lucide="flame" style="width: 20px; height: 20px;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${stats.currentStreakDays} + ' Days'">0 Days</div>
+                    <div class="stat-desc">Consecutive study days</div>
+                </div>
+
+                <div class="card stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Completed Sessions</span>
+                        <div class="stat-icon" style="background: rgba(217, 70, 239, 0.15); color: #f472b6;">
+                            <i data-lucide="award" style="width: 20px; height: 20px;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" th:text="${stats.completedSessions}">0</div>
+                    <div class="stat-desc">Pomodoro focus intervals</div>
+                </div>
+            </div>
+
+            <!-- Two Column Section: Weekly Chart & Upcoming Tasks -->
+            <div class="grid-2">
+                <!-- Weekly Productivity Chart -->
+                <div class="card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                        <h2 style="font-size: 1.15rem; font-weight: 700;">Weekly Productivity</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">Last 7 Days</span>
+                    </div>
+                    <div style="position: relative; height: 220px; width: 100%;">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Upcoming Tasks -->
+                <div class="card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                        <h2 style="font-size: 1.15rem; font-weight: 700;">Upcoming Tasks</h2>
+                        <a th:href="@{/tasks}" style="font-size: 0.825rem; color: var(--primary); font-weight: 600;">View All</a>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(upcomingTasks)}" style="padding: 30px 0; text-align: center; color: var(--text-muted);">
+                        <i data-lucide="check-circle-2" style="width: 32px; height: 32px; color: var(--text-dim); margin-bottom: 8px;"></i>
+                        <p style="font-size: 0.9rem;">No urgent pending tasks. You're caught up!</p>
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(upcomingTasks)}" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div th:each="task : ${upcomingTasks}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg-input); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <form th:action="@{/tasks/{id}/toggle(id=${task.id})}" method="post" style="margin: 0;">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--text-dim); display: flex;">
+                                        <i data-lucide="circle" style="width: 18px; height: 18px;"></i>
+                                    </button>
+                                </form>
+                                <div>
+                                    <div style="font-size: 0.9rem; font-weight: 600;" th:text="${task.title}">Task Title</div>
+                                    <div style="font-size: 0.775rem; color: var(--text-dim);" th:if="${task.dueDate != null}" th:text="'Due ' + ${task.dueDate}">Due Date</div>
+                                </div>
+                            </div>
+                            <span class="badge" th:classappend="${task.priority.badgeClass}" th:text="${task.priority.label}">Medium</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Virtual Study Rooms Section -->
+            <div class="card" style="margin-bottom: 28px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="font-size: 1.25rem; font-weight: 700;">Live Study Rooms</h2>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Drop in to study alongside other students.</p>
+                    </div>
+                    <a th:href="@{/rooms}" class="btn btn-secondary btn-sm">Explore All Rooms</a>
+                </div>
+
+                <div th:if="${#lists.isEmpty(activeRooms)}" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <i data-lucide="users" style="width: 40px; height: 40px; color: var(--text-dim); margin-bottom: 12px;"></i>
+                    <p style="font-size: 0.95rem; margin-bottom: 12px;">No active study rooms at the moment.</p>
+                    <a th:href="@{/rooms/create}" class="btn btn-primary btn-sm">Create the First Room</a>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(activeRooms)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                    <div th:each="room : ${activeRooms}" style="padding: 20px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                <span class="badge badge-public">Public Room</span>
+                                <span style="font-size: 0.8rem; color: var(--text-dim); display: flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+                                    <span th:text="${room.activeParticipantCount} + ' / ' + ${room.maxParticipants}">0 / 25</span>
+                                </span>
+                            </div>
+                            <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;" th:text="${room.name}">Room Name</h3>
+                            <div style="font-size: 0.8rem; color: var(--primary); font-weight: 500; margin-bottom: 8px;" th:text="${room.subject}">Computer Science</div>
+                            <p style="font-size: 0.825rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 16px;" th:text="${room.description ?: 'Distraction-free group study environment.'}">Description</p>
+                        </div>
+                        <a th:href="@{/rooms/{id}(id=${room.id})}" class="btn btn-secondary btn-sm" style="width: 100%;">
+                            <span>Enter Room</span>
+                            <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Sessions History -->
+            <div class="card">
+                <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px;">Recent Study Activity</h2>
+                <div th:if="${#lists.isEmpty(recentSessions)}" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.9rem;">
+                    No recorded study sessions yet. Start the focus timer to track your study sessions!
+                </div>
+                <div th:unless="${#lists.isEmpty(recentSessions)}" style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-dim); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">
+                                <th style="padding: 12px 16px;">Subject</th>
+                                <th style="padding: 12px 16px;">Type</th>
+                                <th style="padding: 12px 16px;">Duration</th>
+                                <th style="padding: 12px 16px;">Date & Time</th>
+                                <th style="padding: 12px 16px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="s : ${recentSessions}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                                <td style="padding: 12px 16px; font-weight: 600;" th:text="${s.subject ?: 'General'}">CS</td>
+                                <td style="padding: 12px 16px;" th:text="${s.sessionType.displayName}">Focus Session</td>
+                                <td style="padding: 12px 16px;" th:text="${s.actualDurationSeconds / 60} + ' min'">25 min</td>
+                                <td style="padding: 12px 16px; color: var(--text-muted);" th:text="${#temporals.format(s.startTime, 'MMM dd, yyyy HH:mm')}">Oct 31, 2026</td>
+                                <td style="padding: 12px 16px;">
+                                    <span class="badge" th:classappend="${s.status == T(com.focusroom.entity.enums.SessionStatus).COMPLETED ? 'badge-public' : 'badge-private'}" th:text="${s.status}">COMPLETED</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    lucide.createIcons();
+
+    // Render Weekly Productivity Chart
+    const weeklyLabels = /*[[${stats.weeklyLabels}]]*/ ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weeklyHours = /*[[${stats.weeklyHours}]]*/ [0, 0, 0, 0, 0, 0, 0];
+
+    const ctx = document.getElementById('weeklyChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: weeklyLabels,
+                datasets: [{
+                    label: 'Study Hours',
+                    data: weeklyHours,
+                    backgroundColor: 'rgba(99, 102, 241, 0.65)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    },
+                    x: {
+                        ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
